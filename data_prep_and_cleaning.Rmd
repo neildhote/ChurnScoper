@@ -1,0 +1,46 @@
+---
+title: "Data Preparation and Analysis"
+author: ""
+date: ""
+output: 
+---
+
+```{r cars}
+library(plyr)
+library(corrplot)
+library(ggplot2)
+library(gridExtra)
+library(ggthemes)
+library(caret)
+library(lattice)
+library(MASS)
+library(randomForest)
+library(party)
+library(sandwich)
+library(rpart)
+library(rattle)
+library(GoodmanKruskal)
+library(e1071)
+library(rpart.plot)
+library(caTools)
+library(class)
+```
+
+```{r}
+churn_data <- read.csv('BankChurners.csv')
+str(churn_data)
+```
+
+```{r}
+sapply(churn_data, function(x) sum(is.na(x)))
+
+churn_data$Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1 <- NULL
+churn_data$Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2 <- NULL
+churn_data$Customer_ID <- NULL
+```
+
+
+```{r}
+str(churn_data)
+summary(churn_data)
+```
