@@ -27,20 +27,24 @@ library(class)
 ```
 
 ```{r}
-churn_data <- read.csv('BankChurners.csv')
-str(churn_data)
+churn_data <- read.csv('data/BankChurners.csv')
 ```
 
 ```{r}
 sapply(churn_data, function(x) sum(is.na(x)))
 
-churn_data$Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1 <- NULL
-churn_data$Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2 <- NULL
-churn_data$Customer_ID <- NULL
 ```
 
 
 ```{r}
-str(churn_data)
+
+# REMOVE IRRELEVANT COLUMNS
+
+
+drop <- c("Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1","Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2","CLIENTNUM")
+churn_data = churn_data[,!(names(churn_data) %in% drop)]
+
 summary(churn_data)
 ```
+
+

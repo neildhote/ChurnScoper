@@ -1,0 +1,134 @@
+---
+title: "Data Preparation and Analysis"
+author: ""
+date: ""
+output: 
+---
+
+```{r cars}
+library(plyr)
+library(corrplot)
+library(ggplot2)
+library(gridExtra)
+library(ggthemes)
+library(caret)
+library(lattice)
+library(MASS)
+library(randomForest)
+library(party)
+library(sandwich)
+library(rpart)
+library(rattle)
+library(GoodmanKruskal)
+library(e1071)
+library(rpart.plot)
+library(caTools)
+library(SciViews)
+library(class)
+```
+
+```{r}
+churn_data <- read.csv('data/BankChurners.csv')
+```
+
+```{r}
+sapply(churn_data, function(x) sum(is.na(x))) # No Nans Awesome
+```
+
+```{r}
+
+# REMOVE IRRELEVANT COLUMNS
+
+
+drop <- c("Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1","Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2","CLIENTNUM")
+churn_data = churn_data[,!(names(churn_data) %in% drop)]
+```
+
+
+```{r}
+summary(churn_data)
+```
+
+Let's see the 
+
+
+```{r}
+ggplot(churn_data, aes(x=Attrition_Flag,
+                  y= prop.table(stat(count)),
+                  fill= factor(Gender),
+                  label= scales::percent(prop.table(stat(count))))) +
+  geom_bar(position = position_dodge())+
+  geom_text(stat="count",
+            position = position_dodge(.9),
+            vjust= -0.5, size=3)+
+  scale_y_continuous(labels = scales::percent)+
+  labs(title = "Attrition by Gender",
+       x= "Attrition status",
+       y="Count")+
+  theme_classic()+
+  scale_fill_discrete(
+    name="Gender",
+    breaks=c("M", "F"),
+    labels=c("Male", "Female" )
+  )
+
+ggplot(churn_data, aes(x=Attrition_Flag,
+                  y= prop.table(stat(count)),
+                  fill= factor(Card_Category),
+                  label= scales::percent(prop.table(stat(count))))) +
+  geom_bar(position = position_dodge())+
+  geom_text(stat="count",
+            position = position_dodge(.9),
+            vjust= -0.5, size=3)+
+  labs(title = "Attrition by Card Category",
+       x= "Attrition status",
+       y="Count")+
+  theme_classic()
+
+ggplot(churn_data, aes(x=Attrition_Flag,
+                  y= prop.table(stat(count)),
+                  fill= factor(Income_Category),
+                  label= scales::percent(prop.table(stat(count))))) +
+  geom_bar(position = position_dodge())+
+  geom_text(stat="count",
+            position = position_dodge(.9),
+            vjust= -0.5, size=3)
+  labs(title = "Attrition by Income Category",
+       x= "Attrition status",
+       y="Count")+
+  theme_classic()
+
+ggplot(churn_data, aes(y=Customer_Age,
+                  x= Education_Level,
+                  fill= factor(Attrition_Flag))) +
+  geom_boxplot(position = position_dodge())+
+  labs(title = "Attrition Status By Age and Education",
+       x= "Education level",
+       y="Age")
+
+ggplot(churn_data, aes(Months_on_book))+
+  geom_bar(col="blue")+ facet_wrap(~Attrition_Flag)+theme_bw()
+
+ggplot(churn_data, aes(Marital_Status))+
+  geom_bar(col="red")+ facet_wrap(~Attrition_Flag)+theme_bw()
+
+ggplot(churn_data, aes(Dependent_count))+
+  geom_bar(col="red")+ facet_wrap(~Attrition_Flag)+theme_bw()
+
+```
+```{r}
+
+#PCA on numerical columns ## maybe even do MCA for the categorical ones
+churn_data.pca <- pcomp(scale(churn_data[,c(2,4,9:20)]), center = TRUE)
+summary(churn_data.pca)
+```
+
+
+```{r}
+screeplot(churn_data.pca)
+(churn_data.ldg <- loadings(churn_data.pca))
+plot(churn_data.pca, which = "loadings",)
+```
+
+
+
