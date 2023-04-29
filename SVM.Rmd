@@ -15,3 +15,11 @@ data <- read.csv("BankChurners.csv")
 # Convert Attrition_Flag to binary (0 or 1)
 data$Attrition_Flag <- ifelse(data$Attrition_Flag == "Existing Customer", 1, 0)
 ```
+
+```{r}
+# Split the data into training and testing sets
+set.seed(123)
+train_index <- sample(1:nrow(data), 0.8 * nrow(data))
+train_data <- data[train_index,]
+test_data <- data[-train_index,]
+```
