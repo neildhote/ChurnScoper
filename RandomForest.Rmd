@@ -1,8 +1,6 @@
 ---
-title: "Data Preparation and Analysis"
-author: ""
-date: ""
-output: 
+title: "CSP 571 Project - Random Forest"
+output: pdf_document
 ---
 
 ```{r cars}
