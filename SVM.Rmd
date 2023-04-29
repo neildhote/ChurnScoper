@@ -1,5 +1,5 @@
 ---
-title: "CSP 571 Project - Random Forest"
+title: "CSP 571 Project - SVM"
 output: pdf_document
 ---
 
@@ -34,4 +34,17 @@ formula <- Attrition_Flag ~ Customer_Age + Gender + Dependent_count + Education_
 
 # Train the SVM model
 svm_model <- svm(formula, data=train_data, kernel="radial", cost=1, scale=TRUE)
+```
+
+```{r}
+# Make predictions on the test set
+predictions <- predict(svm_model, newdata=test_data)
+
+# Calculate the accuracy of the model
+accuracy <- sum(predictions == test_data$Attrition_Flag) / length(predictions)
+print(paste("Accuracy:", accuracy))
+
+# Display the confusion matrix
+confusion_matrix <- table(Predicted=predictions, Actual=test_data$Attrition_Flag)
+print(confusion_matrix)
 ```
