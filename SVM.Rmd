@@ -3,3 +3,15 @@ title: "CSP 571 Project - Random Forest"
 output: pdf_document
 ---
 
+```{r}
+# Load necessary libraries
+library(e1071)
+```
+
+```{r}
+# Read the data
+data <- read.csv("BankChurners.csv")
+
+# Convert Attrition_Flag to binary (0 or 1)
+data$Attrition_Flag <- ifelse(data$Attrition_Flag == "Existing Customer", 1, 0)
+```
