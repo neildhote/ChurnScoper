@@ -119,16 +119,22 @@ ggplot(churn_data, aes(Dependent_count))+
 ```{r}
 
 #PCA on numerical columns ## maybe even do MCA for the categorical ones
-churn_data.pca <- pcomp(scale(churn_data[,c(2,4,9:20)]), center = TRUE)
+churn_data.pca_ldg <- pcomp(scale(churn_data[,c(2,4,9:20)]), center = TRUE)
+churn_data.pca <- prcomp(scale(churn_data[,c(2,4,9:20)]), center = TRUE)
+
 summary(churn_data.pca)
 ```
 
-
 ```{r}
-screeplot(churn_data.pca)
-(churn_data.ldg <- loadings(churn_data.pca))
-plot(churn_data.pca, which = "loadings",)
+screeplot(churn_data.pca_ldg)
+(churn_data.ldg <- loadings(churn_data.pca_ldg))
+plot(churn_data.pca_ldg, which = "loadings",)
 ```
+```{r}
+pc_data <- churn_data.pca$x[,1:10]
+cat_data <- churn_data[,c(1,3,5:8)]
+churn_pca <-data.frame(cat_data, pc_data)
+churn_pca[sapply(churn_pca, is.character)]<- lapply(churn_pca[sapply(churn_pca, is.character)], as.factor)
 
 
 
