@@ -1,5 +1,5 @@
 ---
-title: "CSP 571 Project - Random Forest"
+title: "CSP 571 Project -Final"
 output: pdf_document
 ---
 
@@ -24,6 +24,8 @@ library(caTools)
 library(SciViews)
 library(class)
 library(neuralnet)
+library("FactoMineR")
+library("factoextra")
 ```
 
 ```{r}
@@ -48,9 +50,6 @@ churn_data[sapply(churn_data, is.character)]<- lapply(churn_data[sapply(churn_da
 ```{r}
 summary(churn_data)
 ```
-
-Let's see the 
-
 
 ```{r exploratory data analysis}
 ggplot(churn_data, aes(x=Attrition_Flag,
@@ -106,6 +105,12 @@ ggplot(churn_data, aes(y=Customer_Age,
        x= "Education level",
        y="Age")
 
+
+ggplot(churn_data, aes(Customer_Age))+
+  geom_bar(col="red")+ facet_wrap(~Attrition_Flag)+theme_bw()
+
+
+
 ggplot(churn_data, aes(Months_on_book))+
   geom_bar(col="blue")+ facet_wrap(~Attrition_Flag)+theme_bw()
 
@@ -115,8 +120,6 @@ ggplot(churn_data, aes(Marital_Status))+
 ggplot(churn_data, aes(Dependent_count))+
   geom_bar(col="red")+ facet_wrap(~Attrition_Flag)+theme_bw()
 ```
-
-
 
 
 
@@ -137,8 +140,21 @@ screeplot(churn_data.pca_ldg)
 plot(churn_data.pca_ldg, which = "loadings",)
 ```
 ```{r}
-pc_data <- churn_data.pca$x[,1:10]
-cat_data <- churn_data[,c(1,3,5:8)]
+pc_data <- churn_data.pca$x[,1:10] # pca
+cat_data <- churn_data[,c(1,3,5:8)] # getting the categorical columns
+mca_data<-MCA(cat_data,ncp=3,graph = TRUE)
+fviz_screeplot(mca_data, addlabels = TRUE, ylim = c(0, 45))
+fviz_mca_var(mca_data, choice = "mca.cor", 
+            repel = TRUE, # Avoid text overlapping (slow)
+            ggtheme = theme_minimal())
+
+```
+
+
+
+
+```{r}
+
 churn_pca <-data.frame(cat_data, pc_data)
 churn_pca[sapply(churn_pca, is.character)]<- lapply(churn_pca[sapply(churn_pca, is.character)], as.factor)
 ```
@@ -163,10 +179,10 @@ cat("Testing data dimensions:", dim(testing_pca), "\n")
 
 ```{r}
 # Splitting the regular dataset
-# Create a data partition with 80% of the data for training and 20% for testing
+
 train_indices <- createDataPartition(churn_data$Attrition_Flag, p = 0.80, list = FALSE)
 
-# Select the rows for training and testing based on the partition created above
+
 train_data <- churn_data[train_indices,]
 test_data <- churn_data[-train_indices,]
 
@@ -174,21 +190,53 @@ test_data <- churn_data[-train_indices,]
 cat("Training data dimensions:", dim(train_data), "\n")
 cat("Testing data dimensions:", dim(test_data), "\n")
 
-# Print summary statistics of the training and testing datasets if desired
-# summary(train_data)
-# summary(test_data)
+
 ```
 
-```{r}
-# Random Forest for PCA data
-# Train a random forest model with 500 trees using the PCA training dataset
-rf_pca <- randomForest(Attrition_Flag ~ ., ntree = 500, family = "binomial", data = training_pca)
 
-# Print summary statistics of the random forest model
+
+
+```{r Naive Bayes on PCA}
+#
+
+naive_bayes<- naiveBayes(Attrition_Flag ~ ., data= training_pca)
+naive_bayes
+nb_pred<- predict(naive_bayes, testing_pca)
+caret::confusionMatrix(nb_pred, testing_pca$Attrition_Flag)
+```
+
+```{r Naive Bayes for regular data}
+
+#
+
+naive_bayes<- naiveBayes(Attrition_Flag ~ ., data= train_data)
+naive_bayes
+nb_pred<- predict(naive_bayes, test_data)
+caret::confusionMatrix(nb_pred, testing_pca$Attrition_Flag)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r Random Forest for PCA data}
+# 
+
+rf_pca <- randomForest(Attrition_Flag ~ ., ntree = 1000, family = "binomial", data = training_pca)
+
+
 print(summary(rf_pca))
 
-# Print the random forest model to inspect the model structure and parameters
-rf_pca
 
 # Predict on test
 rf_pca_pred <- predict(rf_pca, testing_pca)
@@ -197,66 +245,59 @@ caret::confusionMatrix(rf_pca_pred, test_data$Attrition_Flag)
 
 ```
 
-```{r}
-# Random Forest for regular data
-# Train a random forest model with 500 trees using the regular training dataset
-rf_reg <- randomForest(Attrition_Flag ~ ., ntree = 500, family = "binomial", data = train_data)
+```{r Random Forest for regular data}
+# 
 
-# Print summary statistics of the random forest model
-print(summary(rf_reg))
+rf_reg <- randomForest(Attrition_Flag ~ ., ntree = 1000, family = "binomial", data = train_data)
 
-# Print the random forest model to inspect the model structure and parameters
-rf_reg
 
-# Predict the outcomes for the testing dataset using the trained model
 rf_reg_pred <- predict(rf_reg, test_data)
 
-# Print confusion matrix to evaluate the performance of the model
+
 caret::confusionMatrix(rf_reg_pred, test_data$Attrition_Flag)
 
 ```
 
-```{r}
-#SVM on Regular data
+```{r SVM on Regular data}
+#
 
-# Create a formula for the model
 formula <- Attrition_Flag ~ Customer_Age + Gender + Dependent_count + Education_Level +
   Marital_Status + Income_Category + Card_Category + Months_on_book +
   Total_Relationship_Count + Months_Inactive_12_mon + Contacts_Count_12_mon +
   Credit_Limit + Total_Revolving_Bal + Avg_Open_To_Buy + Total_Amt_Chng_Q4_Q1 +
   Total_Trans_Amt + Total_Trans_Ct + Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio
 
-# Train the SVM model
+
 svm_model <- svm(formula, data=train_data, kernel="radial", cost=1, scale=TRUE)
 
 predictions <- predict(svm_model, newdata=test_data)
 
-# Calculate the accuracy of the model
+
 accuracy <- sum(predictions == test_data$Attrition_Flag) / length(predictions)
 print(paste("Accuracy:", accuracy))
 
-# Display the confusion matrix
+
 confusion_matrix <- table(Predicted=predictions, Actual=test_data$Attrition_Flag)
 print(confusion_matrix)
 ```
 
 
-```{r}
-#SVM on PCA data
+```{r SVM on PCA data}
+#
 
-# Create a formula for the model
+
 formula <- Attrition_Flag ~ .
 
-# Train the SVM model
+
 svm_model <- svm(formula, data=training_pca, kernel="radial", cost=1, scale=TRUE)
 
 predictions <- predict(svm_model, newdata=testing_pca)
 
-# Calculate the accuracy of the model
+
 accuracy <- sum(predictions == test_data$Attrition_Flag) / length(predictions)
 print(paste("Accuracy:", accuracy))
 
-# Display the confusion matrix
+
 confusion_matrix <- table(Predicted=predictions, Actual=testing_pca$Attrition_Flag)
 print(confusion_matrix)
 ```
@@ -267,87 +308,62 @@ print(confusion_matrix)
 
 
 
-```{r}
-#Naive Bayes on PCA
-
-naive_bayes<- naiveBayes(Attrition_Flag ~ ., data= training_pca)
-naive_bayes
-nb_pred<- predict(naive_bayes, testing_pca)
-caret::confusionMatrix(nb_pred, testing_pca$Attrition_Flag)
-```
-
-```{r}
-
-#Naive Bayes for regular data
-
-naive_bayes<- naiveBayes(Attrition_Flag ~ ., data= train_data)
-naive_bayes
-nb_pred<- predict(naive_bayes, test_data)
-caret::confusionMatrix(nb_pred, testing_pca$Attrition_Flag)
-
-```
 
 
-```{r}
-# Comparision of different models on PCA Data 
+
+```{r Comparision of different models on PCA Data }
+# 
 
 
 Y = c(0.7847,0.7807,0.8904)
 names1 = c("Random Forest","SVM" , "Naive Bayes")
 experiment <- data.frame(Algorithm = names1,
                          Percentage = Y)
-ggplot(data = experiment, mapping = aes(x=Algorithm, y=Percentage)) +
+ggplot(data = experiment, mapping = aes(x=Algorithm, y=Percentage)) + ggtitle("Comparison of Models on PCA data") +
   geom_bar(stat="identity", position = "dodge",fill="lightblue") + scale_fill_brewer(palette = "Pastel2")+
   geom_text(aes(label = Percentage), vjust = -0.2, size = 5,
             position = position_dodge(0.9)) +
   ylim(0, max(experiment$Percentage)*1.1)
 ```
 
-```{r}
+```{r Comparison of Models on Regular data}
 
 Y = c(0.961,0.925,0.731)
 names1 = c("Random Forest","SVM" , "Naive Bayes")
 experiment <- data.frame(Algorithm = names1,
                          Percentage = Y)
-ggplot(data = experiment, mapping = aes(x=Algorithm, y=Percentage)) +
+ggplot(data = experiment, mapping = aes(x=Algorithm, y=Percentage)) + ggtitle("Comparison of Models on Regular data") +
   geom_bar(stat="identity", position = "dodge",fill="lightblue") + scale_fill_brewer(palette = "Pastel2")+
   geom_text(aes(label = Percentage), vjust = -0.2, size = 5,
             position = position_dodge(0.9)) +
   ylim(0, max(experiment$Percentage)*1.1)
 ```
 
-```{r}
+```{r NEURAL NETWORK TRY THAT FAILED}
 
 
 #NEURAL NETWORK
 train_data_nn <- as.data.frame(sapply(train_data,unclass))
+
 test_data_nn <- as.data.frame(sapply(test_data,unclass))
-
 train_data_nn$Attrition_Flag <- train_data_nn$Attrition_Flag - 1
+test_data_nn$Attrition_Flag <- test_data_nn$Attrition_Flag - 1
 
-model = neuralnet(
-    Attrition_Flag ~ .,
-data=train_data_nn,
-hidden=c(12,10,2),
-linear.output = FALSE
-)
 
-plot(model,rep = "best")
 
+#val_indices <- createDataPartition(train_data_nn$Attrition_Flag, p = 0.9, list = FALSE)
+
+#val_data_nn <- train_data_nn[-val_indices,]
+
+#names(train_data_nn) <- NULL
+#names(val_data_nn) <- NULL
+#names(test_data_nn) <- NULL
+
+train_data_nn <- as.data.frame.matrix(train_data_nn)
 ```
 
 
 
-
-
-```{r}
-pred <- predict(model, test_data_nn)
-
-check = as.numeric(test_data_nn$Attrition_Flag) == max.col(pred)
-accuracy = (sum(check)/nrow(test_data_nn))*100
-print(accuracy)
-
-```
 
 
 
@@ -360,38 +376,44 @@ library(keras)
 
 model <- keras_model_sequential()%>%
   # Start with a hidden 2D convolutional layer
-  layer_conv_2d(
-    filter = 16, kernel_size = c(3,3), padding = "same",
-    input_shape = c(32, 32, 3), activation = 'leaky_relu'
-  ) %>%
-
-  # 2nd hidden layer
-  layer_conv_2d(filter = 32, kernel_size = c(3,3), activation = 'leaky_relu') %>%
- 
-
-  # Use max pooling
-  layer_max_pooling_2d(pool_size = c(2,2)) %>%
-  layer_dropout(0.25) %>%
-
-  # 3rd and 4th hidden 2D convolutional layers
-  layer_conv_2d(filter = 32, kernel_size = c(3,3), padding = "same", activation = 'leaky_relu') %>%
-
-  layer_conv_2d(filter = 64, kernel_size = c(3,3), activation = 'leaky_relu') %>%
-
-  # Use max pooling
-  layer_max_pooling_2d(pool_size = c(2,2)) %>%
-  layer_dropout(0.25) %>%
- 
-  # Flatten max filtered output into feature vector
-  # and feed into dense layer
-  layer_flatten() %>%
-  layer_dense(256, activation = 'leaky_relu') %>%
-  layer_dropout(0.5) %>%
-
+  layer_dense(19, activation = 'relu',input_shape = c(19,1))%>%
+  layer_dense(5, activation = 'relu')%>%
   # Outputs from dense layer
   layer_dense(2, activation = 'softmax')
 
 
 
+```
+
+
+
+```{r}
+
+opt <- optimizer_adamax(learning_rate = 0.01)
+
+loss <- loss_sparse_categorical_crossentropy(from_logits = TRUE)
+
+
+model %>% compile(
+  loss = loss,
+  optimizer = opt,
+  metrics = "accuracy"
+)
+```
+
+```{r}
+
+summary(model)
+
+```
+
+```{r}
+history <- model %>% fit(
+  train_data_nn[-1,2:20],train_data_nn[-1,1],
+  batch_size = 32,
+  epochs = 10,
+  validation_split=0.1,
+  shuffle = TRUE
+)
 ```
 
